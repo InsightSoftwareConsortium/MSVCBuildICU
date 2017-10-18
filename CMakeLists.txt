@@ -2,45 +2,8 @@ cmake_minimum_required(VERSION 2.8.10.2)
 # Requirements from Cygwin:
 # patch, dos2unix, make, binutils
 #
-# This project allows to configure, build, archive and upload an OpenSSL install tree.
+# This project allows to configure, build, archive an ICU install tree.
 #
-
-if(DEFINED UPLOAD_PACKAGE_SCRIPT)
-
-  set(MIDAS_URL "https://midas3.kitware.com")
-  set(FOLDER_ID 203)
-  set(PACKAGE_TYPE "Tar.gz Archive")
-  
-  set(midas_api_script ${ARCHIVE_DIR}/MidasAPI.cmake)
-  if(NOT EXISTS ${midas_api_script})
-    file(DOWNLOAD ${MIDAS_URL}/api/rest?method=midas.packages.script.download ${midas_api_script})
-  endif()
-  include(${midas_api_script})
-    
-  message("----------------------")
-  message("${PACKAGE_NAME}")
-  message("  os: ${PACKAGE_OS}")
-  message("  arch: ${PACKAGE_ARCH}")
-  message("  version: ${PACKAGE_VERSION}")
-
-  midas_api_package_upload(
-    API_URL ${MIDAS_URL}
-    API_EMAIL ${MIDAS_USER}
-    API_KEY ${MIDAS_API_KEY}
-    FILE "${ARCHIVE_DIR}/${PACKAGE_NAME}"
-    NAME ${PACKAGE_NAME}
-    FOLDER_ID ${FOLDER_ID}
-    APPLICATION_ID ${APPLICATION_ID}
-    OS ${PACKAGE_OS}
-    ARCH ${PACKAGE_ARCH}
-    PACKAGE_TYPE ${PACKAGE_TYPE}
-    SUBMISSION_TYPE Experimental
-    RELEASE "${PACKAGE_VERSION}"
-    RESULT_VARNAME upload_status
-    )
-  message("Upload status: ${upload_status}")
-  return()
-endif()
 
 project(ICU)
 include(ExternalProject)
@@ -64,17 +27,8 @@ set(binary_archive_name "${root_name}-install-msvc${MSVC_VERSION}-${bitness}")
 set(binary_archive_name_with_config "${binary_archive_name}-${CMAKE_BUILD_TYPE}")
 set(binary_archive_name_with_config_tmp "${binary_archive_name}-${CMAKE_BUILD_TYPE}-tmp")
 
-option(UPLOAD_PACKAGES "Upload package(s)" OFF)
 option(SUPERBUILD "Build ${proj} Debug and Release tree" ON)
 
-if(UPLOAD_PACKAGES)
-  set(MIDAS_USER "" CACHE STRING "Midas User")
-  set(MIDAS_API_KEY "" CACHE STRING "Midas API Key")
-  set(package_upload_options
-    -DMIDAS_USER:STRING=${MIDAS_USER}
-    -DMIDAS_API_KEY:STRING=${MIDAS_API_KEY}
-    )
-endif()
 set(CYGWIN_PATH "c:\\cygwin" CACHE PATH "Cygwin install path")
 find_program(dos2unix_COMMAND dos2unix.exe DOC "Path to dos2unix executable" HINTS ${CYGWIN_PATH}/bin)
 if(NOT dos2unix_COMMAND)
@@ -156,21 +110,6 @@ make install")
     )
   ExternalProject_Add_StepTargets(${proj} create-archive)
     
-  if(UPLOAD_PACKAGES)
-    ExternalProject_Add_Step(${proj} upload-archive
-      COMMAND ${CMAKE_COMMAND} 
-        ${package_upload_options}
-        -DARCHIVE_DIR:PATH=${CMAKE_BINARY_DIR}
-        -DPACKAGE_ARCH:STRING=MSVC${MSVC_VERSION}_${bitness}-bit
-        -DPACKAGE_NAME:STRING=${binary_archive_name_with_config}.tar.gz
-        -DPACKAGE_OS:STRING=Windows-${CMAKE_BUILD_TYPE}
-        -DPACKAGE_VERSION:STRING=${version}
-        -DUPLOAD_PACKAGE_SCRIPT:BOOL=ON -P ${CMAKE_CURRENT_LIST_FILE}
-      DEPENDEES create-archive
-      )
-    ExternalProject_Add_StepTargets(${proj} upload-archive)
-  endif()
-  
   if(DEFINED MULTICONFIG_DIR)
     ExternalProject_Add_Step(${proj} copy-into-multiconfig-dir
       COMMAND ${CMAKE_COMMAND} -E copy_directory
@@ -180,7 +119,7 @@ make install")
       )
     ExternalProject_Add_StepTargets(${proj} copy-into-multiconfig-dir)
   endif()
-  
+
 else()
   
   set(multiconfig_dir ${CMAKE_BINARY_DIR}/${binary_archive_name})
@@ -190,8 +129,6 @@ else()
     -DCYGWIN_PATH:PATH=${CYGWIN_PATH}
   -Ddos2unix_COMMAND:FILEPATH=${dos2unix_COMMAND}
     -DSUPERBUILD:BOOL=OFF
-    -DUPLOAD_PACKAGES:BOOL=${UPLOAD_PACKAGES}
-    ${package_upload_options}
     -DMULTICONFIG_DIR:PATH=${multiconfig_dir}
     )
 
@@ -226,20 +163,4 @@ else()
       ${proj}-Release
     STEP_TARGETS build
     )
-  
-  if(UPLOAD_PACKAGES)
-    ExternalProject_Add_Step(${proj}-MultiConfig upload-archive
-      COMMAND ${CMAKE_COMMAND} 
-        ${package_upload_options}
-        -DARCHIVE_DIR:PATH=${CMAKE_BINARY_DIR}
-        -DPACKAGE_ARCH:STRING=MSVC${MSVC_VERSION}_${bitness}-bit
-        -DPACKAGE_NAME:STRING=${binary_archive_name}.tar.gz
-        -DPACKAGE_OS:STRING=Windows
-        -DPACKAGE_VERSION:STRING=${version}
-        -DUPLOAD_PACKAGE_SCRIPT:BOOL=ON -P ${CMAKE_CURRENT_LIST_FILE}
-      DEPENDEES build
-      )
-    ExternalProject_Add_StepTargets(${proj}-MultiConfig upload-archive)
-  endif()
-  
 endif()
