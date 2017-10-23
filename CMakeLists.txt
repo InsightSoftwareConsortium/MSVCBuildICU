@@ -140,6 +140,7 @@ else()
 	  ${ep_cmake_cache_args}
 	  -DCMAKE_BUILD_TYPE:STRING=Release
 	  #-DCMAKE_CONFIGURATION_TYPES:STRING=Release
+    INSTALL_COMMAND ""
     )
     
   ExternalProject_Add(${proj}-Debug
@@ -149,6 +150,7 @@ else()
     CMAKE_CACHE_ARGS ${ep_cmake_cache_args}
 	  -DCMAKE_BUILD_TYPE:STRING=Debug
 	  #-DCMAKE_CONFIGURATION_TYPES:STRING=Debug
+    INSTALL_COMMAND ""
     )
 
   ExternalProject_Add(${proj}-MultiConfig
