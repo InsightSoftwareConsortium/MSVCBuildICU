@@ -14,6 +14,11 @@ libraries are originally prefixed with `s` to show that it is a static version o
 library, but are renamed as part of the packaging process (FindICU.cmake does not look
 for the prefixed library names).
 
+## Requirements
+
+* MSVC toolchain
+* Cygwin: install 'make', 'dos2unix' and 'binutils'
+
 ## Usage
 
 * Configure and generate project with CMake on Windows.
